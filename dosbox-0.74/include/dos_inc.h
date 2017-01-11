@@ -21,6 +21,8 @@
 #ifndef DOSBOX_DOS_INC_H
 #define DOSBOX_DOS_INC_H
 
+#include <stddef.h>
+
 #ifndef DOSBOX_DOS_SYSTEM_H
 #include "dos_system.h"
 #endif

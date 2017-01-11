@@ -18,6 +18,7 @@
 
 /* $Id: cpu.cpp,v 1.116 2009-03-16 18:10:08 c2woody Exp $ */
 
+#include <stddef.h>
 #include <assert.h>
 #include <sstream>
 #include "dosbox.h"
