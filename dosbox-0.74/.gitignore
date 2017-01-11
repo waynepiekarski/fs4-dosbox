@@ -1,0 +1,7 @@
+stamp-h1
+Makefile
+.deps
+*.o
+*.a
+/config.*
+dosbox

@@ -534,6 +534,232 @@ void PreparePCJRCartRom(void) {
 	}
 }
 
+#include <unistd.h>
+#include <stdio.h>
+
+unsigned char *wayne_memory = NULL;
+size_t wayne_length = 0;
+
+void wayne_dump(char *buffer) {
+  FILE *fp = fopen(buffer, "wb");
+  fwrite(wayne_memory, 1, wayne_length, fp);
+  fclose(fp);
+  LOG_MSG("WAYNE: %s written", buffer);
+}
+
+void wayne_set(int offset, unsigned char b) {
+  unsigned char *ptr = wayne_memory + offset;
+  *ptr = b;
+  LOG_MSG("WAYNE: Set %p to %x", ptr, b);
+}
+
+void wayne_read(char *buffer) {
+  FILE *fp = fopen(buffer, "rb");
+  fread(wayne_memory, 1, wayne_length, fp);
+  fclose(fp);
+  LOG_MSG("WAYNE: %s read", buffer);
+}
+
+int hack_locations[] = {
+#include "../hacks.h"
+};
+
+void *wayne_thread(void *args) {
+  LOG_MSG("WAYNE: sleep(1)");
+  sleep(1);
+  char buffer[4096];
+  int idx = 79;
+  int idx_limit = sizeof(hack_locations)/sizeof(int);
+  LOG_MSG("MAX ARRAY SIZE IS %d", idx_limit);
+  while(1) {
+    char *str = fgets(buffer, 4096, stdin);
+    LOG_MSG("Received string %s", buffer);
+    if (idx < idx_limit) {
+      LOG_MSG("Patching value at index %d which is mem location %d 0x%x", idx, hack_locations[idx], hack_locations[idx]);
+      *(wayne_memory+hack_locations[idx]) = 0xFF;
+      idx++;
+    } else {
+      LOG_MSG("REACHED END! DONE!");
+    }
+  }
+}
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <stdlib.h>
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+
+#define error_string() strerror(errno)
+#define gen_fatal(...) LOG_MSG(__VA_ARGS__),exit(1)
+
+
+int UDPopen (const char *dest_host, int port, int block)
+{
+  int fd;
+  
+  /* Create the socket for datagrams on IP */
+  fd = socket (AF_INET, SOCK_DGRAM, 0);
+  if (fd < 0)
+    gen_fatal ("Could not create new socket with AF_INET and SOCK_DGRAM - %s", error_string ());
+  
+  /* Setup and clear the socket structure */
+  struct sockaddr_in socket_info;
+  memset (&socket_info, 0x0, sizeof (struct sockaddr_in));
+  
+  /* Setup a socket on our machine, if we are listening then we need to specify a port,
+     otherwise we leave it set to the default values */
+  socket_info.sin_family = AF_INET;
+  socket_info.sin_addr.s_addr = htonl (INADDR_ANY);
+  if (dest_host == NULL)
+    socket_info.sin_port = htons (port);
+  
+  /* Bind the socket info to the file descriptor */
+  if (bind (fd, (struct sockaddr *)&socket_info, sizeof (socket_info)) < 0)
+    gen_fatal ("Could not bind source address to the socket on fd %d - %s", fd, error_string ());
+  
+  /* Enable broadcasting mode on this socket, just in case we need it */
+  int boolean_var = 1;
+  if (setsockopt (fd, SOL_SOCKET, SO_BROADCAST, &boolean_var, sizeof (boolean_var)))
+    gen_fatal ("setsockopt() failed to set broadcast flag on the new socket fd %d - %s", fd, error_string());
+  
+  /* Now, if we want to transmit from this socket, we need to do a connect() to set up
+     for read and write calls */
+  if (dest_host != NULL)
+    {
+      /* Lookup the host name to get its IP address, etc */
+      struct hostent *host_info = gethostbyname (dest_host);
+      if (host_info == NULL)
+        gen_fatal ("Could not retrieve host name for %s with gethostbyname - %s", dest_host, error_string());
+      
+      /* Store the host and port info into the socket structure */
+      memset (&socket_info, 0x0, sizeof (socket_info));
+      bcopy (host_info->h_addr, (char *)&socket_info.sin_addr, host_info->h_length);
+      socket_info.sin_family = host_info->h_addrtype;
+      socket_info.sin_port = htons ((u_short)port);
+      
+      /* Do the connect() call to make it happen */
+      if (connect (fd, (struct sockaddr *)&socket_info, sizeof (socket_info)) < 0)
+        gen_fatal ("Could not connect destination address to the socket on fd %d - %s", fd, error_string ());
+    }
+  
+  /* Make the socket non-blocking so we can do select() operations on it */
+  if (block == 0)
+    {
+      int flags = fcntl (fd, F_GETFL, 0);
+      if (flags < 0)
+        gen_fatal ("fcntl() failed to retrieve file descriptor flags on the new socket fd %d - %s", fd, error_string ());
+      if (fcntl (fd, F_SETFL, flags | O_NONBLOCK) < 0)
+        gen_fatal ("fcntl() failed to set the non-blocking mode flag on the new socket fd %d - %s", fd, error_string ()); 
+    }
+  else if (block == 1)
+    {
+      /* Do nothing */
+    }
+  else
+    gen_fatal ("The UDP blocking mode flag %d is not valid - the argument is invalid", block);
+  
+  /* Debug message */
+  if (dest_host == NULL)
+    LOG_MSG("Opened the UDP listener socket on port %d, on fd %d", port, fd);
+  else
+    LOG_MSG("Opened the UDP transmitter socket for host %s:%d, on fd %d", dest_host, port, fd);
+  
+  /* Return back the file descriptor */
+  return (fd);
+}
+
+
+void *wayne_udp(void *args) {
+  char *server = getenv("SERVER");
+  char *left = getenv("LEFT");
+  char *right = getenv("RIGHT");
+  int magic_ofs = 0x28d0;
+  size_t magic_bytes = 4 + 4 + 4 + 2 + 2 + 2; // East, Alt, North, Pitch, Roll, Heading
+  if ((server != NULL) && (strlen(server) != 0)) {
+    LOG_MSG("Detected SERVER configuration, will send UDP packets");
+    int fd1 = UDPopen("127.0.0.1", 7777, 1); // Use blocking send
+    int fd2 = UDPopen("127.0.0.1", 7778, 1); // Use blocking send
+    while(1) {
+      char buffer[magic_bytes];
+      memcpy(buffer, wayne_memory+magic_ofs, magic_bytes);
+      LOG_MSG("Sending %zu bytes to socket", magic_bytes);
+      if (send(fd1, buffer, magic_bytes, 0) != magic_bytes)
+	gen_fatal("Send1 failed");
+      if (send(fd2, buffer, magic_bytes, 0) != magic_bytes)
+	gen_fatal("Send2 failed");
+      usleep(10*1000); // 10 msec refresh
+    }
+  } else if ((left != NULL) && (strlen(left) != 0)) {
+    LOG_MSG("Detected LEFT configuration, will receive UDP packets");
+    int fd = UDPopen(NULL, 7777, 1); // Use blocking receive
+    while(1) {
+      char buffer[magic_bytes];
+      if (recv(fd, buffer, magic_bytes, 0) != magic_bytes)
+	gen_fatal("Receive failed");
+      LOG_MSG("Received %zu bytes from socket", magic_bytes);
+      memcpy(wayne_memory+magic_ofs, buffer, magic_bytes);
+    }
+  } else if ((right != NULL) && (strlen(right) != 0)) {
+    LOG_MSG("Detected RIGHT configuration, will receive UDP packets");
+    int fd = UDPopen(NULL, 7778, 1); // Use blocking receive
+    while(1) {
+      char buffer[magic_bytes];
+      if (recv(fd, buffer, magic_bytes, 0) != magic_bytes)
+	gen_fatal("Receive failed");
+      LOG_MSG("Received %zu bytes from socket", magic_bytes);
+      memcpy(wayne_memory+magic_ofs, buffer, magic_bytes);
+    }
+  } else {
+    LOG_MSG("Detected default configuration, will not implement UDP");
+  }
+}
+
+void *wayne_debugger(void *args) {
+  LOG_MSG("WAYNE: DEBUGGER START - USE HEX VALUES HERE!");
+  sleep(1);
+  char buffer[4096];
+  while(1) {
+    char *str = fgets(buffer, 4096, stdin);
+    str[strlen(str)-1] = '\0';
+    char cmd[64];
+    int ofs;
+    int val;
+    LOG_MSG("Received string [%s] strlen=%d", str, strlen(str));
+    sscanf(str, "%s %x %x", cmd, &ofs, &val);
+    // LOG_MSG("CMD=[%s]", cmd);
+    if (!strcasecmp(cmd, "w")) {
+      LOG_MSG("Writing to ofs=%x with value=%x", ofs, val);
+      *(wayne_memory+ofs) = val;
+    } else if (!strcasecmp(cmd, "r")) {
+      unsigned char val = *(wayne_memory+ofs);
+      LOG_MSG("Reading from ofs=%x and found value=%x", ofs, val);
+    } else if (!strcasecmp(cmd, "save")) {
+      char buf [256];
+      sprintf (buf, "dump-%d.log", ofs);
+      wayne_dump(buf);
+    } else {
+      LOG_MSG("UNKNOWN! CMD[%s] OFS[0x%x] VAL[0x%x]", cmd, ofs, val);
+    }    
+  }
+}
+
+void wayne_start_thread() {
+  pthread_t thread;
+  LOG_MSG("Starting thread");
+  pthread_create(&thread, NULL, wayne_debugger, NULL);
+
+  pthread_t udp;
+  pthread_create(&udp, NULL, wayne_udp, NULL);
+
+}
+
 HostPt GetMemBase(void) { return MemBase; }
 
 class MEMORY:public Module_base{
@@ -559,6 +785,11 @@ public:
 			LOG_MSG("Stick with the default values unless you are absolutely certain.");
 		}
 		MemBase = new Bit8u[memsize*1024*1024];
+		wayne_memory = (unsigned char *)MemBase;
+		wayne_length = memsize*1024*1024;
+		LOG_MSG("WAYNE: Allocated %zu (0x%x) bytes of memory from %p to %p\n", wayne_length, wayne_length, wayne_memory, wayne_memory+wayne_length);
+		wayne_start_thread();
+
 		if (!MemBase) E_Exit("Can't allocate main memory of %d MB",memsize);
 		/* Clear the memory, as new doesn't always give zeroed memory
 		 * (Visual C debug mode). We want zeroed memory though. */
