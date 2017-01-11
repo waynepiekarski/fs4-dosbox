@@ -1,0 +1,8 @@
+#!/bin/bash
+
+apt-get update
+
+# apt-get build-dep dosbox
+# Computed from: apt-rdepends --build-depends --follow=DEPENDS dosbox
+
+apt-get install libasound2-dev libpng12-dev libsdl-net1.2-dev libsdl-sound1.2-dev libsdl1.2-dev
