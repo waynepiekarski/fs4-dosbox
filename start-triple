@@ -5,10 +5,10 @@ DOS=dosbox-0.74/src/dosbox
 
 set -xv
 
-( export LEFT=true   && $DOS -conf dosbox-0.74.conf ) &
+xterm -e "( export LEFT=true   && $DOS -conf dosbox-0.74.conf )" &
 sleep 1s
-( export RIGHT=true  && $DOS -conf dosbox-0.74.conf ) &
+xterm -e "( export RIGHT=true  && $DOS -conf dosbox-0.74.conf )" &
 
 # Start the server last so it doesn't transmit until the remotes are ready
 sleep 1s
-( export SERVER=true && $DOS -conf dosbox-0.74.conf ) &
+xterm -e "( export SERVER=true && $DOS -conf dosbox-0.74.conf )" &
