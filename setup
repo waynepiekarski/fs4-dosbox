@@ -1,0 +1,4 @@
+#!/bin/bash
+
+cd `dirname $0`
+cd dosbox-0.74 && ./configure && make
