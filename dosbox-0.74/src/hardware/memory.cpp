@@ -693,19 +693,21 @@ void *wayne_udp(void *args) {
     while(1) {
       char buffer[magic_bytes];
       memcpy(buffer, wayne_memory+magic_ofs, magic_bytes);
-      LOG_MSG("Sending %zu bytes to socket", magic_bytes);
+      // LOG_MSG("Sending %zu bytes to socket", magic_bytes);
       int result;
       if ((result = send(fd1, buffer, magic_bytes, 0)) != magic_bytes) {
-	if (errno == ECONNREFUSED)
-	  LOG_MSG("Send1 failed with ECONNREFUSED, but this can happen if there is no process listening");
-	else
+	if (errno == ECONNREFUSED) {
+	  // LOG_MSG("Send1 failed with ECONNREFUSED, but this can happen if there is no process listening");
+	} else {
 	  gen_fatal("Send1 failed fd=%d, result=%d but expected %d - %s", fd1, result, magic_bytes, error_string());
+	}
       }
       if ((result = send(fd2, buffer, magic_bytes, 0)) != magic_bytes) {
-	if (errno == ECONNREFUSED)
-	  LOG_MSG("Send1 failed with ECONNREFUSED, but this can happen if there is no process listening");
-	else
+	if (errno == ECONNREFUSED) {
+	  // LOG_MSG("Send1 failed with ECONNREFUSED, but this can happen if there is no process listening");
+	} else {
 	  gen_fatal("Send2 failed fd=%d, result=%d but expected %d - %s", fd2, result, magic_bytes, error_string());
+	}
       }
       usleep(10*1000); // 10 msec refresh
     }
@@ -716,7 +718,7 @@ void *wayne_udp(void *args) {
       char buffer[magic_bytes];
       if (recv(fd, buffer, magic_bytes, 0) != magic_bytes)
 	gen_fatal("Receive failed");
-      LOG_MSG("Received %zu bytes from socket", magic_bytes);
+      // LOG_MSG("Received %zu bytes from socket", magic_bytes);
       memcpy(wayne_memory+magic_ofs, buffer, magic_bytes);
     }
   } else if ((right != NULL) && (strlen(right) != 0)) {
@@ -726,7 +728,7 @@ void *wayne_udp(void *args) {
       char buffer[magic_bytes];
       if (recv(fd, buffer, magic_bytes, 0) != magic_bytes)
 	gen_fatal("Receive failed");
-      LOG_MSG("Received %zu bytes from socket", magic_bytes);
+      // LOG_MSG("Received %zu bytes from socket", magic_bytes);
       memcpy(wayne_memory+magic_ofs, buffer, magic_bytes);
     }
   } else {
