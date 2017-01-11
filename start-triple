@@ -1,0 +1,9 @@
+#!/bin/bash
+
+cd `dirname $0`
+DOS=dosbox-0.74/src/dosbox
+
+set -xv
+( export SERVER=true && $DOS -conf dosbox-0.74.conf ) &
+( export LEFT=true   && $DOS -conf dosbox-0.74.conf ) &
+( export RIGHT=true  && $DOS -conf dosbox-0.74.conf ) &
