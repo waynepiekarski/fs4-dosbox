@@ -685,15 +685,28 @@ void *wayne_udp(void *args) {
   if ((server != NULL) && (strlen(server) != 0)) {
     LOG_MSG("Detected SERVER configuration, will send UDP packets");
     int fd1 = UDPopen("127.0.0.1", 7777, 1); // Use blocking send
+    if (fd1 < 0)
+      gen_fatal("Could not open sender for 7777 - %s", error_string());
     int fd2 = UDPopen("127.0.0.1", 7778, 1); // Use blocking send
+    if (fd2 < 0)
+      gen_fatal("Could not open sender for 7778 - %s", error_string());
     while(1) {
       char buffer[magic_bytes];
       memcpy(buffer, wayne_memory+magic_ofs, magic_bytes);
       LOG_MSG("Sending %zu bytes to socket", magic_bytes);
-      if (send(fd1, buffer, magic_bytes, 0) != magic_bytes)
-	gen_fatal("Send1 failed");
-      if (send(fd2, buffer, magic_bytes, 0) != magic_bytes)
-	gen_fatal("Send2 failed");
+      int result;
+      if ((result = send(fd1, buffer, magic_bytes, 0)) != magic_bytes) {
+	if (errno == ECONNREFUSED)
+	  LOG_MSG("Send1 failed with ECONNREFUSED, but this can happen if there is no process listening");
+	else
+	  gen_fatal("Send1 failed fd=%d, result=%d but expected %d - %s", fd1, result, magic_bytes, error_string());
+      }
+      if ((result = send(fd2, buffer, magic_bytes, 0)) != magic_bytes) {
+	if (errno == ECONNREFUSED)
+	  LOG_MSG("Send1 failed with ECONNREFUSED, but this can happen if there is no process listening");
+	else
+	  gen_fatal("Send2 failed fd=%d, result=%d but expected %d - %s", fd2, result, magic_bytes, error_string());
+      }
       usleep(10*1000); // 10 msec refresh
     }
   } else if ((left != NULL) && (strlen(left) != 0)) {
