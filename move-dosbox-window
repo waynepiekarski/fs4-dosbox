@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [ "$3" == "" ]; then
+  echo "$0 <app_name> <x> <y>"
+  echo "Need a string to search for in the app name"
+  echo "Need x,y coordinates to shift the window to"
+  exit 1
+fi
+
+WID=`wmctrl -lp | grep $1 | grep DOSBox | awk '{ print $1 }'`
+# -e is gravity,x,y,width,height
+echo "Moving app $1 to x=$2,y=$3 with window id $WID"
+wmctrl -i -r $WID -e 0,$2,$3,0,0

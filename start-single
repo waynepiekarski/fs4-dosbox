@@ -3,4 +3,4 @@
 cd `dirname $0`
 DOS=dosbox-0.74/src/dosbox
 
-$DOS -conf dosbox-0.74.conf
+$DOS -conf dosbox-0.74.conf ./FS4B/FS4-MAIN.EXE

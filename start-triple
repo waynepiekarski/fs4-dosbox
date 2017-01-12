@@ -5,10 +5,16 @@ DOS=dosbox-0.74/src/dosbox
 
 set -xv
 
-xterm -e "( export LEFT=true   && $DOS -conf dosbox-0.74.conf )" &
+xterm -e "( export LEFT=true   && $DOS -conf dosbox-0.74.conf ./FS4B/FS4-L.EXE )" &
 sleep 1s
-xterm -e "( export RIGHT=true  && $DOS -conf dosbox-0.74.conf )" &
+xterm -e "( export RIGHT=true  && $DOS -conf dosbox-0.74.conf ./FS4B/FS4-R.EXE )" &
 
 # Start the server last so it doesn't transmit until the remotes are ready
 sleep 1s
-xterm -e "( export SERVER=true && $DOS -conf dosbox-0.74.conf )" &
+xterm -e "( export SERVER=true && $DOS -conf dosbox-0.74.conf ./FS4B/FS4-MAIN.EXE )" &
+
+# Align all the windows to the correct displays
+sleep 1s
+./move-dosbox-window "FS4-L" 0 0
+./move-dosbox-window "FS4-MAIN" 1920 0
+./move-dosbox-window "FS4-R" 3840 0
