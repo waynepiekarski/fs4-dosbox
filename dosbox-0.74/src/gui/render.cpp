@@ -564,6 +564,8 @@ static void ChangeScaler(bool pressed) {
 	RENDER_CallBack( GFX_CallBackReset );
 } */
 
+extern bool globalStretch;
+
 void RENDER_Init(Section * sec) {
 	Section_prop * section=static_cast<Section_prop *>(sec);
 
@@ -578,6 +580,8 @@ void RENDER_Init(Section * sec) {
 	render.pal.last=0;
 	render.aspect=section->Get_bool("aspect");
 	render.frameskip.max=section->Get_int("frameskip");
+	globalStretch=section->Get_bool("stretch");
+	LOG_MSG("globalStretch=%d", globalStretch);
 	render.frameskip.count=0;
 	std::string cline;
 	std::string scaler;

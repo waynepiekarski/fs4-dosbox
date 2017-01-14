@@ -374,6 +374,9 @@ void DOSBOX_Init(void) {
 	Pbool = secprop->Add_bool("aspect",Property::Changeable::Always,false);
 	Pbool->Set_help("Do aspect correction, if your output method doesn't support scaling this can slow things down!.");
 
+	Pbool = secprop->Add_bool("stretch",Property::Changeable::Always,false);
+	Pbool->Set_help("Allow image to be stretched to desired size without any correction, can generate distorted images if you pick a strange resolution!");
+
 	Pmulti = secprop->Add_multi("scaler",Property::Changeable::Always," ");
 	Pmulti->SetValue("normal2x");
 	Pmulti->Set_help("Scaler used to enlarge/enhance low resolution modes.\n"

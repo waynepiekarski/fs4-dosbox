@@ -229,6 +229,8 @@ extern bool CPU_CycleAutoAdjust;
 //Globals for keyboard initialisation
 bool startup_state_numlock=false;
 bool startup_state_capslock=false;
+//Globals for stretch mode
+bool globalStretch=false;
 void GFX_SetTitle(Bit32s cycles,Bits frameskip,bool paused){
 	char title[200]={0};
 	static Bit32s internal_cycles=0;
@@ -384,6 +386,16 @@ static SDL_Surface * GFX_SetupSurfaceScaled(Bit32u sdl_flags, Bit32u bpp) {
 		} else {
 			sdl.clip.w=(Bit16u)(sdl.draw.width*sdl.draw.scalex*ratio_h);
 			sdl.clip.h=(Bit16u)fixedHeight;
+		}
+		// DOSBox doesn't have any way to actually stretch the image to fill the window. It always tries
+		// to correct the aspect ratio to make things look proper. This flag allows us to always get the
+		// exact resolution that we want.
+		if (globalStretch) {
+			int old_w = sdl.clip.w;
+			int old_h = sdl.clip.h;
+			sdl.clip.w=(Bit16u)fixedWidth;
+			sdl.clip.h=(Bit16u)fixedHeight;
+			LOG_MSG("Stretch mode overriding from %dx%d to allow %dx%d", old_w, old_h, sdl.clip.w, sdl.clip.h);
 		}
 		if (sdl.desktop.fullscreen)
 			sdl.surface = SDL_SetVideoMode(fixedWidth,fixedHeight,bpp,sdl_flags);
@@ -1008,6 +1020,12 @@ static void GUI_StartUp(Section * sec) {
 
 	sdl.desktop.fullscreen=section->Get_bool("fullscreen");
 	sdl.wait_on_error=section->Get_bool("waitonerror");
+
+	globalStretch=section->Get_bool("stretch");
+	if (globalStretch)
+		LOG_MSG("Detected stretch=true setting");
+	else
+		LOG_MSG("Detected stretchx=false setting");
 
 	Prop_multival* p=section->Get_multival("priority");
 	std::string focus = p->GetSection()->Get_string("active");
