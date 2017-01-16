@@ -1,0 +1,54 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+    echo "Requires window name, such as FS4-MAIN, FS4-L, FS4-R, etc"
+    exit 1
+fi
+
+WID=`xdotool search --name "Program:$1"`
+if [ "$WID" == "" ]; then
+    echo "Failed to find window id for name $1"
+    exit 1
+fi
+
+echo "Found window id [$WID] for window name [$1]"
+
+set -xv
+
+# Calibrate joystick
+xdotool key --window $WID --delay 200 space
+sleep 1s
+
+# Pause the simulation
+xdotool key --window $WID --delay 200 p
+
+# Disable view of aircraft from side windows
+xdotool key --window $WID --delay 200 2 E 3 Escape Escape
+sleep 1s
+
+# Look left or right if appropriate
+if [ "$1" == "    FS4-L" ]; then
+    echo "Setting left view"
+    xdotool key --window $WID --delay 200 Scroll_Lock+Left
+    sleep 1s
+fi
+if [ "$1" == "    FS4-R" ]; then
+    echo "Setting right view"
+    xdotool key --window $WID --delay 200 Scroll_Lock+Right
+    sleep 1s
+fi
+
+# Configure zoom for all viewports so the FOV is about 90 degrees per display
+xdotool key --window $WID --delay 200 BackSpace minus
+
+sleep 1s
+
+# Need to use 200 msec delay otherwise FS4 doesn't see the shift modifier properly and the zoom jumps too much
+for each in 1 2 3 4 5 6 7 8 9 10 11 12 13 14; do xdotool key --window $WID --delay 200 shift+plus; done
+
+# Unpause the simulation on the main display, the audio will start working and the sim is ready
+if [ "$1" == " FS4-MAIN" ]; then
+    sleep 1s
+    echo "Unpausing simulation, it is ready"
+    xdotool key --window $WID p
+fi
