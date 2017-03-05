@@ -3,4 +3,6 @@
 cd `dirname $0`
 DOS=dosbox-0.74/src/dosbox
 
+./scripts/check-fs4b `pwd`/FS4B/ || { echo "ERROR! Failed to find FS4B files" ; exit 1; }
+
 $DOS -conf dosbox-0.74.conf ./FS4B/FS4-MAIN.EXE

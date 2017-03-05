@@ -1,0 +1,32 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+   echo "Need an FS4B directory to check"
+   exit 1
+fi
+
+echo "Checking if FS4B directory $1 exists and is configured properly"
+
+if [ ! -x $1 ]; then
+    echo "ERROR! Could not find directory $1, this needs to be configured to a copy of Flight Simulator 4"
+    exit 1
+fi
+
+if [ ! -f $1/FS4.EXE ]; then
+    echo "ERROR! Could not find FS4.EXE binary in directory $1, this needs to be configured to a copy of Flight Simulator 4"
+    exit 1
+fi
+
+if [ ! -f $1/FS4-L.EXE ]; then
+    ln -svf FS4.EXE $1/FS4-L.EXE
+fi
+
+if [ ! -f $1/FS4-R.EXE ]; then
+    ln -svf FS4.EXE $1/FS4-R.EXE
+fi
+
+if [ ! -f $1/FS4-MAIN.EXE ]; then
+    ln -svf FS4.EXE $1/FS4-MAIN.EXE
+fi
+
+exit 0

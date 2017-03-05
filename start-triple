@@ -3,6 +3,8 @@
 cd `dirname $0`
 DOS=dosbox-0.74/src/dosbox
 
+./scripts/check-fs4b `pwd`/FS4B/ || { echo "ERROR! Failed to find FS4B files" ; exit 1; }
+
 set -xv
 
 killall dosbox
@@ -18,14 +20,14 @@ xterm -e "( export SERVER=true && $DOS -conf dosbox-0.74.conf ./FS4B/FS4-MAIN.EX
 # Align all the windows to the correct displays
 sleep 1s
 # Needs +20 offset for first window or the titlebar is hidden
-./move-dosbox-window "FS4-L" 0 20
+./scripts/move-dosbox-window "FS4-L" 0 20
 sleep 1s
-./move-dosbox-window "FS4-MAIN" 1920 0
+./scripts/move-dosbox-window "FS4-MAIN" 1920 0
 sleep 1s
-./move-dosbox-window "FS4-R" 3840 0
+./scripts/move-dosbox-window "FS4-R" 3840 0
 
 # Now configure each FS4 instance with a set of initial keystrokes
 # Need to pad the label with spaces since DOSBox pads the name to 8 chars
-./setup-fs4-instance "    FS4-L"
-./setup-fs4-instance "    FS4-R"
-./setup-fs4-instance " FS4-MAIN"
+./scripts/config-fs4-instance "    FS4-L"
+./scripts/config-fs4-instance "    FS4-R"
+./scripts/config-fs4-instance " FS4-MAIN"
