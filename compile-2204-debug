@@ -1,4 +1,6 @@
 #!/bin/bash
 
 cd `dirname $0`
-cd dosbox-0.74 && ./configure --enable-debug=heavy CXXFLAGS="-std=c++98" && make -j`nproc`
+# Support the hacked in stdin command interface for setting/getting values
+# But cannot support the dosbox interactive debugger since this also uses stdin
+cd dosbox-0.74 && ./configure CXXFLAGS="-std=c++98" && make -j`nproc`
