@@ -1,0 +1,4 @@
+#!/bin/bash
+
+cd `dirname $0`
+cd dosbox-0.74 && ./configure --enable-debug=heavy CXXFLAGS="-std=c++98" && make -j`nproc`
