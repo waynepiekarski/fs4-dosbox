@@ -740,6 +740,8 @@ void *wayne_debugger(void *args) {
   LOG_MSG("WAYNE: DEBUGGER START - USE HEX VALUES HERE!");
   sleep(1);
   char buffer[4096];
+  char last[4096];
+  sprintf(last, "");
   while(1) {
     char *str = fgets(buffer, 4096, stdin);
     str[strlen(str)-1] = '\0';
@@ -747,14 +749,25 @@ void *wayne_debugger(void *args) {
     int ofs;
     int val;
     LOG_MSG("Received string [%s] strlen=%d", str, strlen(str));
-    sscanf(str, "%s %x %x", cmd, &ofs, &val);
+    if (!strcmp(str,"")) {
+      strcpy(buffer, last);
+      LOG_MSG("Reusing last string [%s] strlen=%d", str, strlen(str));
+    } else {
+      strcpy(last, buffer);
+    }
+    int args = sscanf(str, "%s %x %x", cmd, &ofs, &val);
     // LOG_MSG("CMD=[%s]", cmd);
     if (!strcasecmp(cmd, "w")) {
       LOG_MSG("Writing to ofs=%x with value=%x", ofs, val);
       *(wayne_memory+ofs) = val;
     } else if (!strcasecmp(cmd, "r")) {
-      unsigned char val = *(wayne_memory+ofs);
-      LOG_MSG("Reading from ofs=%x and found value=%x", ofs, val);
+      if (args != 3) {
+	val = 1;
+      }
+      for(int c = 0; c < val; c++) {
+	unsigned char ret = *(wayne_memory+ofs+c);
+	LOG_MSG ("Read start=%x ofs=%x value=%.2x", ofs, c, ret);
+      }
     } else if (!strcasecmp(cmd, "save")) {
       char buf [256];
       sprintf (buf, "dump-%d.log", ofs);
