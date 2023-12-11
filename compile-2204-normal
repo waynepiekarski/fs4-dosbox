@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cd `dirname $0`
+# Enable debugging so we can inspect dosbox internals and set read memory
+# breakpoints using gdb
+cd dosbox-0.74 && ./configure CXXFLAGS="-std=c++98 -g -O0" --enable-debug && make -j`nproc`
