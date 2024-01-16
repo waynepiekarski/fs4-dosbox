@@ -755,13 +755,21 @@ void *wayne_debugger(void *args) {
     } else {
       strcpy(last, buffer);
     }
-    int args = sscanf(str, "%s %x %x", cmd, &ofs, &val);
+    int wrep;
+    int args = sscanf(str, "%s %x %x %x", cmd, &ofs, &val, &wrep);
     // LOG_MSG("CMD=[%s]", cmd);
     if (!strcasecmp(cmd, "w")) {
-      LOG_MSG("Writing to ofs=%x with value=%x", ofs, val);
-      *(wayne_memory+ofs) = val;
+      if (args < 4) {
+	LOG_MSG("Writing to ofs=%x with value=%x", ofs, val);
+	*(wayne_memory+ofs) = val;
+      } else {
+	LOG_MSG("Writing to ofs=%x with value=%x for repeats=%x", ofs, val, wrep);
+	for(int c = 0; c < wrep; c++) {
+	  *(wayne_memory+ofs+c) = val;
+	}
+      }
     } else if (!strcasecmp(cmd, "r")) {
-      if (args != 3) {
+      if (args < 3) {
 	val = 1;
       }
       for(int c = 0; c < val; c++) {
