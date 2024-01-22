@@ -754,6 +754,14 @@ void btechmap() {
   }
 }
 
+void btechxy() {
+  while(1) {
+    unsigned char *coords = wayne_memory+0x2852B;
+    LOG_MSG("BTECHMAP: COORDS X = %.2X %.2X, Y = %.2X %.2X", *(coords+1), *(coords+0), *(coords+3), *(coords+2));
+    sleep(1);
+  }
+}
+
 void *wayne_debugger(void *args) {
   LOG_MSG("WAYNE: DEBUGGER START - USE HEX VALUES HERE!");
   sleep(1);
@@ -800,6 +808,8 @@ void *wayne_debugger(void *args) {
       wayne_dump(buf);
     } else if (!strcasecmp(cmd, "btechmap")) {
       btechmap();
+    } else if (!strcasecmp(cmd, "btechxy")) {
+      btechxy();
     } else {
       LOG_MSG("UNKNOWN! CMD[%s] OFS[0x%x] VAL[0x%x]", cmd, ofs, val);
     }    
