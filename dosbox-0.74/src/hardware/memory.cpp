@@ -736,6 +736,24 @@ void *wayne_udp(void *args) {
   }
 }
 
+#include "keyboard.h"
+
+void btechmap() {
+  LOG_MSG("BTECHMAP: Starting");
+  while(1) {
+    LOG_MSG("BTECHMAP: LEFT");
+    KEYBOARD_AddKey(KBD_left, true);
+    KEYBOARD_AddKey(KBD_left, false);
+    sleep(1);
+    LOG_MSG("BTECHMAP: UP");
+    KEYBOARD_AddKey(KBD_up, true);
+    KEYBOARD_AddKey(KBD_up, false);
+    unsigned char *coords = wayne_memory+0x2852B;
+    LOG_MSG("BTECHMAP: COORDS X = %.2X %.2X, Y = %.2X %.2X", *(coords+1), *(coords+0), *(coords+3), *(coords+2));
+    sleep(1);
+  }
+}
+
 void *wayne_debugger(void *args) {
   LOG_MSG("WAYNE: DEBUGGER START - USE HEX VALUES HERE!");
   sleep(1);
@@ -780,6 +798,8 @@ void *wayne_debugger(void *args) {
       char buf [256];
       sprintf (buf, "dump-%d.log", ofs);
       wayne_dump(buf);
+    } else if (!strcasecmp(cmd, "btechmap")) {
+      btechmap();
     } else {
       LOG_MSG("UNKNOWN! CMD[%s] OFS[0x%x] VAL[0x%x]", cmd, ofs, val);
     }    
