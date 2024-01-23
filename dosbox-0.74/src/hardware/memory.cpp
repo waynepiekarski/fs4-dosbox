@@ -754,10 +754,15 @@ void btechmap() {
   }
 }
 
+void btechsave(char *filename);
+
 void btechxy() {
   while(1) {
     unsigned char *coords = wayne_memory+0x2852B;
     LOG_MSG("BTECHMAP: COORDS X = %.2X %.2X, Y = %.2X %.2X", *(coords+1), *(coords+0), *(coords+3), *(coords+2));
+    char filename [256];
+    sprintf(filename, "save-%.2X%.2X-%.2X%.2X.png", *(coords+1), *(coords+0), *(coords+3), *(coords+2));
+    btechsave(filename);
     sleep(1);
   }
 }
