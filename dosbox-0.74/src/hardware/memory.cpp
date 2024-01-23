@@ -762,6 +762,61 @@ void btechxy() {
   }
 }
 
+#include "vga.h"
+#include "lodepng/lodepng.h"
+#include "lodepng/lodepng.cpp"
+
+inline Bit32u GetAddress(Bit16u seg, Bit32u offset)
+{
+  return (seg<<4)+offset;
+}
+
+void btechsave(char *filename) {
+  const int width = 216;
+  const int height = 200;
+  // Crop the framebuffer to ignore pixels 0-104 on the left, just export 105,0 - 320,200
+  unsigned char pixels[height][width];
+  Bit8u val;
+  Bitu seg = 0xA000;
+  for (int row = 0; row < height; row++) {
+    for (int col = 0; col < width; col++) {
+      Bitu ofs = row*320 + col + 104;
+      // You cannot read the A000 framebuffer from the wayne_memory pointer, it isn't visible there
+      // for some reason, it is just blank 0x00 bytes. So we use mem_readb_checked() to get each
+      // byte, which is how MEMDUMPBIN works.
+      mem_readb_checked(GetAddress(seg,ofs),&val);
+      pixels[row][col] = val;
+    }
+  }
+  // Capture the VGA palette
+  unsigned char* rgbpalette = (unsigned char*)&vga.dac.rgb;
+  lodepng::State state;
+  for (int i = 0; i < 256; i++) {
+    unsigned char r = rgbpalette[i*3+0]*4;
+    unsigned char g = rgbpalette[i*3+1]*4;
+    unsigned char b = rgbpalette[i*3+2]*4;
+    unsigned char a = 0xFF;
+    lodepng_palette_add(&state.info_png.color, r, g, b, a);
+    lodepng_palette_add(&state.info_raw, r, g, b, a);
+    //fprintf(stderr, "Palette %d = (R%d,G%d,B%d,A%d)\n", i, r, g, b, a);
+  }
+  state.info_png.color.colortype = LCT_PALETTE;
+  state.info_png.color.bitdepth = 8;
+  state.info_raw.colortype = LCT_PALETTE;
+  state.info_raw.bitdepth = 8;
+  state.encoder.auto_convert = 0;
+
+  std::vector<unsigned char> buffer;
+  fprintf(stderr, "Dumping entire framebuffer\n");
+  unsigned error = lodepng::encode(buffer, &pixels[0][0], width, height, state);
+  if(error) {
+    fprintf(stderr, "PNG encoder error %d: %s\n", error, lodepng_error_text(error));
+    exit(1);
+  }
+  lodepng::save_file(buffer, filename);
+  fprintf(stderr, "Saved btech cropped framebuffer PNG to %s\n", filename);
+}
+
 void *wayne_debugger(void *args) {
   LOG_MSG("WAYNE: DEBUGGER START - USE HEX VALUES HERE!");
   sleep(1);
@@ -810,6 +865,8 @@ void *wayne_debugger(void *args) {
       btechmap();
     } else if (!strcasecmp(cmd, "btechxy")) {
       btechxy();
+    } else if (!strcasecmp(cmd, "btechsave")) {
+      btechsave("btechsave.png");
     } else {
       LOG_MSG("UNKNOWN! CMD[%s] OFS[0x%x] VAL[0x%x]", cmd, ofs, val);
     }    
