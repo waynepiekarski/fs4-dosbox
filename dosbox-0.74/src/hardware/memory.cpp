@@ -867,7 +867,8 @@ void btechsnake() {
       // LOG_MSG("BTECHSNAKE: COORDS X = %.2X %.2X, Y = %.2X %.2X", *(coords+1), *(coords+0), *(coords+3) >> 4, *(coords+2));
       LOG_MSG("BTECHSNAKE: COORDS X = %.4X Y = %.4X", x, y);
       char filename [256];
-      sprintf(filename, "save-%.4X-%.4X.png", x, y);
+      // Order the file names with y then x so the sort order is easier to view row-by-row as it is calculated
+      sprintf(filename, "save-y%.4X-x%.4X.png", y, x);
       btechsave(filename);
 
       if (DOWNdir != 0) {
