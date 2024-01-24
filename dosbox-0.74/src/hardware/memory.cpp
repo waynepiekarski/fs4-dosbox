@@ -699,14 +699,14 @@ void *wayne_udp(void *args) {
 	if (errno == ECONNREFUSED) {
 	  // LOG_MSG("Send1 failed with ECONNREFUSED, but this can happen if there is no process listening");
 	} else {
-	  gen_fatal("Send1 failed fd=%d, result=%d but expected %d - %s", fd1, result, magic_bytes, error_string());
+	  gen_fatal("Send1 failed fd=%d, result=%d but expected %zu - %s", fd1, result, magic_bytes, error_string());
 	}
       }
       if ((result = send(fd2, buffer, magic_bytes, 0)) != magic_bytes) {
 	if (errno == ECONNREFUSED) {
 	  // LOG_MSG("Send1 failed with ECONNREFUSED, but this can happen if there is no process listening");
 	} else {
-	  gen_fatal("Send2 failed fd=%d, result=%d but expected %d - %s", fd2, result, magic_bytes, error_string());
+	  gen_fatal("Send2 failed fd=%d, result=%d but expected %zu - %s", fd2, result, magic_bytes, error_string());
 	}
       }
       usleep(10*1000); // 10 msec refresh
@@ -734,6 +734,7 @@ void *wayne_udp(void *args) {
   } else {
     LOG_MSG("Detected default configuration, will not implement UDP");
   }
+  return NULL;
 }
 
 #include "keyboard.h"
@@ -754,7 +755,7 @@ void btechmap() {
   }
 }
 
-void btechsave(char *filename);
+void btechsave(const char *filename);
 
 void btechxy() {
   while(1) {
@@ -891,17 +892,17 @@ void *wayne_debugger(void *args) {
   sleep(1);
   char buffer[4096];
   char last[4096];
-  sprintf(last, "");
+  strcpy(last, "");
   while(1) {
     char *str = fgets(buffer, 4096, stdin);
     str[strlen(str)-1] = '\0';
     char cmd[64];
     int ofs;
     int val;
-    LOG_MSG("Received string [%s] strlen=%d", str, strlen(str));
+    LOG_MSG("Received string [%s] strlen=%zu", str, strlen(str));
     if (!strcmp(str,"")) {
       strcpy(buffer, last);
-      LOG_MSG("Reusing last string [%s] strlen=%d", str, strlen(str));
+      LOG_MSG("Reusing last string [%s] strlen=%zu", str, strlen(str));
     } else {
       strcpy(last, buffer);
     }
@@ -981,10 +982,10 @@ public:
 		MemBase = new Bit8u[memsize*1024*1024];
 		wayne_memory = (unsigned char *)MemBase;
 		wayne_length = memsize*1024*1024;
-		LOG_MSG("WAYNE: Allocated %zu (0x%x) bytes of memory from %p to %p\n", wayne_length, wayne_length, wayne_memory, wayne_memory+wayne_length);
+		LOG_MSG("WAYNE: Allocated %zu (0x%zx) bytes of memory from %p to %p\n", wayne_length, wayne_length, wayne_memory, wayne_memory+wayne_length);
 		wayne_start_thread();
 
-		if (!MemBase) E_Exit("Can't allocate main memory of %d MB",memsize);
+		if (!MemBase) E_Exit("Can't allocate main memory of %ld MB",memsize);
 		/* Clear the memory, as new doesn't always give zeroed memory
 		 * (Visual C debug mode). We want zeroed memory though. */
 		memset((void*)MemBase,0,memsize*1024*1024);
