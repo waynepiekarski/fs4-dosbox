@@ -822,6 +822,70 @@ void btechsave(char *filename) {
   fprintf(stderr, "Saved btech cropped framebuffer PNG to %s\n", filename);
 }
 
+void keyrepeat(const char* name, KBD_KEYS key, int repeat) {
+  LOG_MSG("Key %s=%x repeat %d\n", name, key, repeat);
+  for (int c = 0; c < repeat; c++) {
+    KEYBOARD_AddKey(key, true);
+    KEYBOARD_AddKey(key, false);
+  }
+  usleep(100000);
+}
+
+void btechsnake() {
+  // Game board is top-left=(0,0) and bottom-right=(0x7FFF,0x7FFF) or 15-bit resolution.
+  // The view covers about 14 horizontal and 13 vertical tiles.
+  // Need to walk from (0,0) to the far-right, then down 13 steps, then back left, down 13, then right, etc.
+  int LRdir = +1;
+  int DOWNdir = 0;
+  uint16_t lastx = 0xFFFF;
+  uint16_t lasty = 0xFFFF;
+  while(1) {
+    // Capture where we are now, did we move or did we get stuck on an edge?
+    unsigned char *coords = wayne_memory+0x2852B;
+    uint16_t x = *(coords+1) << 8 + *(coords+0);
+    uint16_t y = *(coords+3) << 8 + *(coords+2);
+    if ((x == lastx) && (y == lasty)) {
+      // We didn't move, so we need to move to a new direction state
+      if (DOWNdir != 0) {
+	// Currently in down mode and we didn't move, so we are finished
+	fprintf(stderr, "Previous down mode is stuck on the bottom row, so we are done\n");
+	exit(0);
+      } else {
+        DOWNdir = +1;
+	LOG_MSG("BTECHSNAKE: Switching to vertical\n");
+      }
+    } else {
+      // We did move successfully, so capture an image here
+      LOG_MSG("BTECHSNAKE: COORDS X = %.2X %.2X, Y = %.2X %.2X", *(coords+1), *(coords+0), *(coords+3), *(coords+2));
+      LOG_MSG("BTECHSNAKE: COORDS X = %.4X Y = %.4X", x, y);
+      char filename [256];
+      sprintf(filename, "save-%.4X-%.4X.png", x, y);
+      btechsave(filename);
+
+      if (DOWNdir != 0) {
+	// Clear the down flag since we only want to do it once per row
+        DOWNdir = 0;
+	LRdir = -LRdir;
+	LOG_MSG("BTECHSNAKE: Switching to horizontal %d after moving down\n", LRdir);
+      } else {
+	// Keep moving in the LDdir direction until we hit an edge
+      }
+    }
+
+    // Using the state direction, try to move the character by injecting key events
+    if (DOWNdir != 0) {
+      keyrepeat("down", KBD_down, 13);
+    } else if (LRdir > 0) {
+      keyrepeat("right", KBD_right, 14);
+    } else if (LRdir < 0) {
+      keyrepeat("left", KBD_left, 14);
+    } else {
+      fprintf(stderr, "Unknown direction state\n");
+      exit(1);
+    }
+  }
+}
+
 void *wayne_debugger(void *args) {
   LOG_MSG("WAYNE: DEBUGGER START - USE HEX VALUES HERE!");
   sleep(1);
@@ -870,6 +934,8 @@ void *wayne_debugger(void *args) {
       btechmap();
     } else if (!strcasecmp(cmd, "btechxy")) {
       btechxy();
+    } else if (!strcasecmp(cmd, "btechsnake")) {
+      btechsnake();
     } else if (!strcasecmp(cmd, "btechsave")) {
       btechsave("btechsave.png");
     } else {
