@@ -755,19 +755,6 @@ void btechmap() {
   }
 }
 
-void btechsave(const char *filename);
-
-void btechxy() {
-  while(1) {
-    unsigned char *coords = wayne_memory+0x2852B;
-    LOG_MSG("BTECHMAP: COORDS X = %.2X %.2X, Y = %.2X %.2X", *(coords+1), *(coords+0), *(coords+3), *(coords+2));
-    char filename [256];
-    sprintf(filename, "save-%.2X%.2X-%.2X%.2X.png", *(coords+1), *(coords+0), *(coords+3), *(coords+2));
-    btechsave(filename);
-    sleep(1);
-  }
-}
-
 #include "vga.h"
 #include "lodepng/lodepng.h"
 #include "lodepng/lodepng.cpp"
@@ -777,7 +764,7 @@ inline Bit32u GetAddress(Bit16u seg, Bit32u offset)
   return (seg<<4)+offset;
 }
 
-void btechsave(char *filename) {
+void btechsave(const char *filename) {
   const int width = 216;
   const int height = 200;
   // Crop the framebuffer to ignore pixels 0-104 on the left, just export 105,0 - 320,200
@@ -821,6 +808,17 @@ void btechsave(char *filename) {
   }
   lodepng::save_file(buffer, filename);
   fprintf(stderr, "Saved btech cropped framebuffer PNG to %s\n", filename);
+}
+
+void btechxy() {
+  while(1) {
+    unsigned char *coords = wayne_memory+0x2852B;
+    LOG_MSG("BTECHMAP: COORDS X = %.2X %.2X, Y = %.2X %.2X", *(coords+1), *(coords+0), *(coords+3), *(coords+2));
+    char filename [256];
+    sprintf(filename, "save-%.2X%.2X-%.2X%.2X.png", *(coords+1), *(coords+0), *(coords+3), *(coords+2));
+    btechsave(filename);
+    sleep(1);
+  }
 }
 
 void keyrepeat(const char* name, KBD_KEYS key, int repeat) {
