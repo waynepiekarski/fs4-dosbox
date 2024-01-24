@@ -811,17 +811,22 @@ void btechsave(const char *filename) {
 }
 
 void btechxy() {
+  // Move the character in 16 unit steps instead of the usual 1, 2, or 4 from the menu
+  LOG_MSG("BTECHMAP: Configuring 16 unit steps\n");
+  *(wayne_memory+0x3892A) = 16;
+
   while(1) {
     unsigned char *coords = wayne_memory+0x2852B;
-    LOG_MSG("BTECHMAP: COORDS X = %.2X %.2X, Y = %.2X %.2X", *(coords+1), *(coords+0), *(coords+3), *(coords+2));
+    LOG_MSG("BTECHMAP: COORDS X = %.2X %.2X, Y = %.2X %.2X", *(coords+1), *(coords+0), *(coords+3) >> 4, *(coords+2));
     char filename [256];
-    sprintf(filename, "save-%.2X%.2X-%.2X%.2X.png", *(coords+1), *(coords+0), *(coords+3), *(coords+2));
+    sprintf(filename, "save-%.2X%.2X-%.2X%.2X.png", *(coords+1), *(coords+0), *(coords+3) >> 4, *(coords+2));
     btechsave(filename);
     sleep(1);
   }
 }
 
 void keyrepeat(const char* name, KBD_KEYS key, int repeat) {
+  // Only use repeat=1 because it seems like extra key events get lost, use 16x movement in the game instead
   LOG_MSG("Key %s=%x repeat %d\n", name, key, repeat);
   for (int c = 0; c < repeat; c++) {
     KEYBOARD_AddKey(key, true);
@@ -831,6 +836,10 @@ void keyrepeat(const char* name, KBD_KEYS key, int repeat) {
 }
 
 void btechsnake() {
+  // Move the character in 16 unit steps instead of the usual 1, 2, or 4 from the menu
+  LOG_MSG("BTECHSNAKE: Configuring 16 unit steps\n");
+  *(wayne_memory+0x3892A) = 16;
+
   // Game board is top-left=(0,0) and bottom-right=(0x7FFF,0x7FFF) or 15-bit resolution.
   // The view covers about 14 horizontal and 13 vertical tiles.
   // Need to walk from (0,0) to the far-right, then down 13 steps, then back left, down 13, then right, etc.
@@ -842,7 +851,7 @@ void btechsnake() {
     // Capture where we are now, did we move or did we get stuck on an edge?
     uint8_t *coords = wayne_memory+0x2852B;
     unsigned x = ((unsigned)(*(coords+1)) << 8) + (unsigned)(*(coords+0));
-    unsigned y = ((unsigned)(*(coords+3)) << 8) + (unsigned)(*(coords+2));
+    unsigned y = ((unsigned)(*(coords+3)) << 4) + (unsigned)(*(coords+2));
     if ((x == lastx) && (y == lasty)) {
       // We didn't move, so we need to move to a new direction state
       if (DOWNdir != 0) {
@@ -855,7 +864,7 @@ void btechsnake() {
       }
     } else {
       // We did move successfully, so capture an image here
-      // LOG_MSG("BTECHSNAKE: COORDS X = %.2X %.2X, Y = %.2X %.2X", *(coords+1), *(coords+0), *(coords+3), *(coords+2));
+      // LOG_MSG("BTECHSNAKE: COORDS X = %.2X %.2X, Y = %.2X %.2X", *(coords+1), *(coords+0), *(coords+3) >> 4, *(coords+2));
       LOG_MSG("BTECHSNAKE: COORDS X = %.4X Y = %.4X", x, y);
       char filename [256];
       sprintf(filename, "save-%.4X-%.4X.png", x, y);
@@ -876,11 +885,11 @@ void btechsnake() {
     
     // Using the state direction, try to move the character by injecting key events
     if (DOWNdir != 0) {
-      keyrepeat("down", KBD_down, 13);
+      keyrepeat("down", KBD_down, 1);
     } else if (LRdir > 0) {
-      keyrepeat("right", KBD_right, 14);
+      keyrepeat("right", KBD_right, 1);
     } else if (LRdir < 0) {
-      keyrepeat("left", KBD_left, 14);
+      keyrepeat("left", KBD_left, 1);
     } else {
       fprintf(stderr, "Unknown direction state\n");
       exit(1);
