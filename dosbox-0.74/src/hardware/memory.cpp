@@ -827,7 +827,7 @@ void keyrepeat(const char* name, KBD_KEYS key, int repeat) {
     KEYBOARD_AddKey(key, true);
     KEYBOARD_AddKey(key, false);
   }
-  usleep(100000);
+  usleep(200000);
 }
 
 void btechsnake() {
@@ -840,9 +840,9 @@ void btechsnake() {
   uint16_t lasty = 0xFFFF;
   while(1) {
     // Capture where we are now, did we move or did we get stuck on an edge?
-    unsigned char *coords = wayne_memory+0x2852B;
-    uint16_t x = *(coords+1) << 8 + *(coords+0);
-    uint16_t y = *(coords+3) << 8 + *(coords+2);
+    uint8_t *coords = wayne_memory+0x2852B;
+    unsigned x = ((unsigned)(*(coords+1)) << 8) + (unsigned)(*(coords+0));
+    unsigned y = ((unsigned)(*(coords+3)) << 8) + (unsigned)(*(coords+2));
     if ((x == lastx) && (y == lasty)) {
       // We didn't move, so we need to move to a new direction state
       if (DOWNdir != 0) {
@@ -855,7 +855,7 @@ void btechsnake() {
       }
     } else {
       // We did move successfully, so capture an image here
-      LOG_MSG("BTECHSNAKE: COORDS X = %.2X %.2X, Y = %.2X %.2X", *(coords+1), *(coords+0), *(coords+3), *(coords+2));
+      // LOG_MSG("BTECHSNAKE: COORDS X = %.2X %.2X, Y = %.2X %.2X", *(coords+1), *(coords+0), *(coords+3), *(coords+2));
       LOG_MSG("BTECHSNAKE: COORDS X = %.4X Y = %.4X", x, y);
       char filename [256];
       sprintf(filename, "save-%.4X-%.4X.png", x, y);
@@ -871,6 +871,9 @@ void btechsnake() {
       }
     }
 
+    lastx = x;
+    lasty = y;
+    
     // Using the state direction, try to move the character by injecting key events
     if (DOWNdir != 0) {
       keyrepeat("down", KBD_down, 13);
