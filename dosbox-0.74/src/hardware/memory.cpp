@@ -817,9 +817,11 @@ void btechxy() {
 
   while(1) {
     unsigned char *coords = wayne_memory+0x2852B;
-    LOG_MSG("BTECHMAP: COORDS X = %.2X %.2X, Y = %.2X %.2X", *(coords+1), *(coords+0), *(coords+3) >> 4, *(coords+2));
+    unsigned x = ((unsigned)(*(coords+1)) << 7) + (unsigned)(*(coords+0)); // Lower is only 7-bits
+    unsigned y = ((unsigned)(*(coords+3)) << 3) + (unsigned)(*(coords+2)); // Lower is only 7-bits
+    LOG_MSG("BTECHXY: COORDS X = %.4X Y = %.4X", x, y);
     char filename [256];
-    sprintf(filename, "save-%.2X%.2X-%.2X%.2X.png", *(coords+1), *(coords+0), *(coords+3) >> 4, *(coords+2));
+    sprintf(filename, "btechxy-y%.4X-x%.4X.png", x, y);
     btechsave(filename);
     sleep(1);
   }
@@ -840,9 +842,11 @@ void btechsnake() {
   LOG_MSG("BTECHSNAKE: Configuring 16 unit steps\n");
   *(wayne_memory+0x3892A) = 16;
 
-  // Game board is top-left=(0,0) and bottom-right=(0x7FFF,0x7FFF) or 15-bit resolution.
+  // Game board is top-left=(0,0) and bottom-right=(0x0F7F,0x0F7F)
+  // Also note the 7F is actually a 7-bit number and never exceeds this, so you need to shift a higher bit in here
+  // After shifts are applied, the game board is (0,0) to (0x7FF,0x7FF) tiles, 0x800 = 2048d
   // The view covers about 14 horizontal and 13 vertical tiles.
-  // Need to walk from (0,0) to the far-right, then down 13 steps, then back left, down 13, then right, etc.
+  // Need to walk from (0,0) to the far-right, then down, then back left, down, then right, etc.
   int LRdir = +1;
   int DOWNdir = 0;
   uint16_t lastx = 0xFFFF;
@@ -850,8 +854,8 @@ void btechsnake() {
   while(1) {
     // Capture where we are now, did we move or did we get stuck on an edge?
     uint8_t *coords = wayne_memory+0x2852B;
-    unsigned x = ((unsigned)(*(coords+1)) << 8) + (unsigned)(*(coords+0));
-    unsigned y = ((unsigned)(*(coords+3)) << 4) + (unsigned)(*(coords+2));
+    unsigned x = ((unsigned)(*(coords+1)) << 7) + (unsigned)(*(coords+0)); // Lower is only 7-bits
+    unsigned y = ((unsigned)(*(coords+3)) << 3) + (unsigned)(*(coords+2)); // Lower is only 7-bits
     if ((x == lastx) && (y == lasty)) {
       // We didn't move, so we need to move to a new direction state
       if (DOWNdir != 0) {
@@ -864,7 +868,6 @@ void btechsnake() {
       }
     } else {
       // We did move successfully, so capture an image here
-      // LOG_MSG("BTECHSNAKE: COORDS X = %.2X %.2X, Y = %.2X %.2X", *(coords+1), *(coords+0), *(coords+3) >> 4, *(coords+2));
       LOG_MSG("BTECHSNAKE: COORDS X = %.4X Y = %.4X", x, y);
       char filename [256];
       // Order the file names with y then x so the sort order is easier to view row-by-row as it is calculated
