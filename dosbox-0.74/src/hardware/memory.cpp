@@ -832,7 +832,7 @@ void keyrepeat(const char* name, KBD_KEYS key, int repeat) {
     KEYBOARD_AddKey(key, true);
     KEYBOARD_AddKey(key, false);
   }
-  usleep(200000);
+  usleep(300000); // 200000 seemed to cause glitches so needs to be 300000
 }
 
 void btechsnake() {
@@ -860,7 +860,7 @@ void btechsnake() {
 	exit(0);
       } else {
         DOWNdir = +1;
-	LOG_MSG("BTECHSNAKE: Switching to vertical\n");
+	LOG_MSG("BTECHSNAKE: lastx=x=%X, lasty=y=%X Switching to vertical\n", lastx, lasty);
       }
     } else {
       // We did move successfully, so capture an image here
