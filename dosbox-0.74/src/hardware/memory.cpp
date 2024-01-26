@@ -851,12 +851,20 @@ void btechsnake() {
   int DOWNdir = 0;
   uint16_t lastx = 0xFFFF;
   uint16_t lasty = 0xFFFF;
+  int stuck = 0;
   while(1) {
     // Capture where we are now, did we move or did we get stuck on an edge?
     uint8_t *coords = wayne_memory+0x2852B;
     unsigned x = ((unsigned)(*(coords+1)) << 7) + (unsigned)(*(coords+0)); // Lower is only 7-bits
     unsigned y = ((unsigned)(*(coords+3)) << 3) + (unsigned)(*(coords+2)); // Lower is only 7-bits
     if ((x == lastx) && (y == lasty)) {
+      // We didn't move, but sometimes glitches can happen, so try waiting a bit longer just in case
+      stuck++;
+      if (stuck < 3) {
+	LOG_MSG("BTECHSNAKE: stuck=%d, trying again: lastx=x=%X, lasty=y=%X\n", stuck, lastx, lasty);
+	continue;
+      }
+
       // We didn't move, so we need to move to a new direction state
       if (DOWNdir != 0) {
 	// Currently in down mode and we didn't move, so we are finished
@@ -868,6 +876,7 @@ void btechsnake() {
       }
     } else {
       // We did move successfully, so capture an image here
+      stuck = 0;
       LOG_MSG("BTECHSNAKE: COORDS X = %.4X Y = %.4X", x, y);
       char filename [256];
       // Order the file names with y then x so the sort order is easier to view row-by-row as it is calculated
