@@ -851,51 +851,43 @@ void btechsnake() {
   int DOWNdir = 0;
   uint16_t lastx = 0xFFFF;
   uint16_t lasty = 0xFFFF;
-  int stuck = 0;
   while(1) {
     // Capture where we are now, did we move or did we get stuck on an edge?
     uint8_t *coords = wayne_memory+0x2852B;
     unsigned x = ((unsigned)(*(coords+1)) << 7) + (unsigned)(*(coords+0)); // Lower is only 7-bits
     unsigned y = ((unsigned)(*(coords+3)) << 3) + (unsigned)(*(coords+2)); // Lower is only 7-bits
-    if ((x == lastx) && (y == lasty)) {
-      // We didn't move, but sometimes glitches can happen, so try waiting a bit longer just in case
-      stuck++;
-      if (stuck < 3) {
-	LOG_MSG("BTECHSNAKE: stuck=%d, trying again: lastx=x=%X, lasty=y=%X\n", stuck, lastx, lasty);
-	continue;
-      }
-
-      // We didn't move, so we need to move to a new direction state
-      if (DOWNdir != 0) {
-	// Currently in down mode and we didn't move, so we are finished
-	fprintf(stderr, "Previous down mode is stuck on the bottom row, so we are done\n");
+    if (x == 0x07FF) {
+      if (y == 0x07FF) {
+	fprintf(stderr, "Arrived at bottom-right corner, finished!\n");
 	exit(0);
-      } else {
-        DOWNdir = +1;
-	LOG_MSG("BTECHSNAKE: lastx=x=%X, lasty=y=%X Switching to vertical\n", lastx, lasty);
       }
-    } else {
-      // We did move successfully, so capture an image here
-      stuck = 0;
-      LOG_MSG("BTECHSNAKE: COORDS X = %.4X Y = %.4X", x, y);
-      char filename [256];
-      // Order the file names with y then x so the sort order is easier to view row-by-row as it is calculated
-      sprintf(filename, "save-y%.4X-x%.4X.png", y, x);
-      btechsave(filename);
-
-      if (DOWNdir != 0) {
-	// Clear the down flag since we only want to do it once per row
-        DOWNdir = 0;
-	LRdir = -LRdir;
-	LOG_MSG("BTECHSNAKE: Switching to horizontal %d after moving down\n", LRdir);
+      if (DOWNdir == 0) {
+	fprintf(stderr, "Detected right edge at 0x07FF, switching to down\n");
+	DOWNdir = +1;
       } else {
-	// Keep moving in the LDdir direction until we hit an edge
+	fprintf(stderr, "Moved down at right edge, switching to left\n");
+	DOWNdir = 0;
+	LRdir = -1;
+      }
+    } else if ((x == 0x0000) && (lastx != 0xFFFF)) {
+      if (DOWNdir == 0) {
+	fprintf(stderr, "Detected left edge at 0x0000, switching to down\n");
+	DOWNdir = +1;
+      } else {
+	fprintf(stderr, "Moved down at left edge, switching to right\n");
+	DOWNdir = 0;
+	LRdir = +1;
       }
     }
-
     lastx = x;
     lasty = y;
-    
+
+    LOG_MSG("BTECHSNAKE: COORDS X = %.4X Y = %.4X", x, y);
+    char filename [256];
+    // Order the file names with y then x so the sort order is easier to view row-by-row as it is calculated
+    sprintf(filename, "save-y%.4X-x%.4X.png", y, x);
+    btechsave(filename);
+
     // Using the state direction, try to move the character by injecting key events
     if (DOWNdir != 0) {
       keyrepeat("down", KBD_down, 1);
