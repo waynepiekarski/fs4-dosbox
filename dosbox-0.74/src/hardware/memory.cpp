@@ -829,7 +829,7 @@ void btechxy() {
 
 void keyrepeat(const char* name, KBD_KEYS key, int repeat) {
   // Only use repeat=1 because it seems like extra key events get lost, use 16x movement in the game instead
-  LOG_MSG("Key %s=%x repeat %d\n", name, key, repeat);
+  LOG_MSG("Key %s=%x repeat %d", name, key, repeat);
   for (int c = 0; c < repeat; c++) {
     KEYBOARD_AddKey(key, true);
     KEYBOARD_AddKey(key, false);
@@ -902,6 +902,39 @@ void btechsnake() {
   }
 }
 
+void btechgo(unsigned targetx, unsigned targety) {
+  // Move the character in 16 unit steps instead of the usual 1, 2, or 4 from the menu
+  LOG_MSG("BTECHGO: Configuring 16 unit steps, new target %.4X,%.4X", targetx, targety);
+  *(wayne_memory+0x3892A) = 16;
+
+  while(1) {
+    uint8_t *coords = wayne_memory+0x2852B;
+    unsigned x = ((unsigned)(*(coords+1)) << 7) + (unsigned)(*(coords+0)); // Lower is only 7-bits
+    unsigned y = ((unsigned)(*(coords+3)) << 3) + (unsigned)(*(coords+2)); // Lower is only 7-bits
+    unsigned xs = x >> 4;
+    unsigned ys = y >> 4;
+    unsigned targetxs = targetx >> 4;
+    unsigned targetys = targety >> 4;
+    LOG_MSG("BTECHGO: XY=%.4X,%.4X to target %.4X,%.4X (reduced %.4X,%.4X)", x, y, targetx, targety, targetxs, targetys);
+    if (xs > targetxs) {
+      keyrepeat("left", KBD_left, 1);
+    } else if (xs < targetxs) {
+      keyrepeat("right", KBD_right, 1);
+    } else if (ys < targetys) {
+      keyrepeat("down", KBD_down, 1);
+    } else if (ys > targetys) {
+      keyrepeat("up", KBD_up, 1);
+    } else {
+      LOG_MSG("BTECHGO: Arrived at target %.4X,%.4X within 1 lower digit", targetx, targety);
+      char filename [256];
+      // Order the file names with y then x so the sort order is easier to view row-by-row as it is calculated
+      sprintf(filename, "save-y%.4X-x%.4X.png", y, x);
+      btechsave(filename);
+      return; // Finish the command
+    }
+  }
+}
+
 void *wayne_debugger(void *args) {
   LOG_MSG("WAYNE: DEBUGGER START - USE HEX VALUES HERE!");
   sleep(1);
@@ -954,6 +987,8 @@ void *wayne_debugger(void *args) {
       btechsnake();
     } else if (!strcasecmp(cmd, "btechsave")) {
       btechsave("btechsave.png");
+    } else if (!strcasecmp(cmd, "btechgo")) {
+      btechgo(ofs, val); // X Y coordinates
     } else {
       LOG_MSG("UNKNOWN! CMD[%s] OFS[0x%x] VAL[0x%x]", cmd, ofs, val);
     }    
