@@ -812,10 +812,10 @@ void btechsave(const char *filename) {
 
 void btechxy() {
   // Move the character in 16 unit steps instead of the usual 1, 2, or 4 from the menu
-  LOG_MSG("BTECHMAP: Configuring 16 unit steps\n");
+  LOG_MSG("BTECHXY: Configuring 16 unit steps\n");
   *(wayne_memory+0x3892A) = 16;
 
-  while(1) {
+  {
     unsigned char *coords = wayne_memory+0x2852B;
     unsigned x = ((unsigned)(*(coords+1)) << 7) + (unsigned)(*(coords+0)); // Lower is only 7-bits
     unsigned y = ((unsigned)(*(coords+3)) << 3) + (unsigned)(*(coords+2)); // Lower is only 7-bits
